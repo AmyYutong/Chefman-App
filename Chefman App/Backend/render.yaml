@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: chefman-api
+    env: python
+    pythonVersion: "3.11"
+    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: GOOGLE_APPLICATION_CREDENTIALS
+        sync: false
+      - key: FIREBASE_CREDENTIALS_JSON
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+        optional: true
+      - key: SECRET_KEY
+        generateValue: true
+    healthCheckPath: /docs
+
