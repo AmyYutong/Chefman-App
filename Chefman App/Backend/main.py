@@ -1,10 +1,8 @@
 # FastAPI Backend using Firebase Firestore
 # This replaces the MySQL-based main.py
 
-from fastapi import FastAPI, Depends, HTTPException, status, UploadFile, File, Form, Query
+from fastapi import FastAPI, Depends, HTTPException, status, Query
 from fastapi.security import OAuth2PasswordBearer
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from passlib.context import CryptContext
 from datetime import datetime, timedelta, date
@@ -42,9 +40,6 @@ if OPENAI_AVAILABLE:
             openai_client = None
     else:
         print("⚠️ OPENAI_API_KEY not found in environment variables")
-
-# Mount static files for serving images
-app.mount("/images", StaticFiles(directory="uploads"), name="images")
 
 # Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -1260,51 +1255,6 @@ def delete_comment(comment_id: int, current_user: dict = Depends(get_current_use
     
     comments_ref.document(str(comment_id)).delete()
     return {"message": "Comment deleted successfully"}
-
-# Image upload endpoints (unchanged, no database dependency)
-@app.post("/upload/image")
-async def upload_image(
-    file: UploadFile = File(...),
-    category: str = Form("recipes"),
-    current_user: dict = Depends(get_current_user)
-):
-    """Upload an image file"""
-    try:
-        from image_storage import image_storage
-        image_info = await image_storage.save_image(file, category)
-        return {
-            "success": True,
-            "image": image_info,
-            "message": "Image uploaded successfully"
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to upload image: {str(e)}")
-
-@app.delete("/images/{category}/{filename}")
-async def delete_image(
-    category: str,
-    filename: str,
-    current_user: dict = Depends(get_current_user)
-):
-    """Delete an image file"""
-    try:
-        from image_storage import image_storage
-        success = image_storage.delete_image(category, filename)
-        if success:
-            return {"message": "Image deleted successfully"}
-        else:
-            raise HTTPException(status_code=404, detail="Image not found")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to delete image: {str(e)}")
-
-@app.get("/images/{category}/{filename}")
-async def get_image(category: str, filename: str):
-    """Get image file"""
-    from image_storage import image_storage
-    image_path = image_storage.get_image_path(category, filename)
-    if not image_path.exists():
-        raise HTTPException(status_code=404, detail="Image not found")
-    return FileResponse(str(image_path))
 
 # Interaction APIs
 @app.post("/favorites")
